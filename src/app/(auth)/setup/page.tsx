@@ -7,6 +7,6 @@ export const metadata = { title: "Set up" };
 
 export default async function SetupPage() {
   if (await hasUser()) redirect("/login");
-  const needsCode = Boolean(process.env.SETUP_CODE) || process.env.NODE_ENV === "production";
+  const needsCode = Boolean(process.env.SETUP_CODE?.trim());
   return <SetupForm needsCode={needsCode} />;
 }

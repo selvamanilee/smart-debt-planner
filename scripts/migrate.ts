@@ -1,24 +1,22 @@
 import "dotenv/config";
-import path from "node:path";
-import { migrate as migratePg } from "drizzle-orm/node-postgres/migrator";
-import { migrate as migrateNeon } from "drizzle-orm/neon-serverless/migrator";
-import { createDb, isNeonUrl } from "../src/lib/db/client";
+import { createDb, resolveDatabaseUrl } from "../src/lib/db/client";
+import { runMigrations } from "../src/lib/db/migrate";
 
 async function main() {
-  const url = process.env.DATABASE_URL;
+  const { url, source } = resolveDatabaseUrl();
   if (!url) {
-    console.warn("[migrate] DATABASE_URL not set — skipping migrations.");
+    console.warn("[migrate] No DATABASE_URL — skipping. Tables will be created automatically on first request.");
     return;
   }
-  const db = createDb(url);
-  const migrationsFolder = path.join(process.cwd(), "drizzle");
-  if (isNeonUrl(url)) await migrateNeon(db as never, { migrationsFolder });
-  else await migratePg(db, { migrationsFolder });
-  console.log("[migrate] Database is up to date.");
-  await (db.$client as { end?: () => Promise<void> }).end?.();
+  try {
+    const db = createDb(url);
+    await runMigrations(db, url);
+    console.log(`[migrate] Database is up to date (using ${source}).`);
+    await (db.$client as { end?: () => Promise<void> }).end?.();
+  } catch (err) {
+    // Don't fail the deployment: the app retries migrations at runtime and shows a clear error.
+    console.error("[migrate] Migration failed during build — will retry at runtime:", err);
+  }
 }
 
-main().catch((err) => {
-  console.error("[migrate] Failed:", err);
-  process.exit(1);
-});
+main();

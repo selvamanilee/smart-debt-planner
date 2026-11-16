@@ -1,6 +1,6 @@
 import "server-only";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { ensureSchema, getDb } from "@/lib/db";
 import * as s from "@/lib/db/schema";
 import { createBlankProfile, seedInitialData } from "@/lib/db/seed";
 import { D, ZERO, round2, toNum, sumD, maxD } from "@/lib/finance/money";
@@ -57,6 +57,7 @@ export async function ensureSeeded() {
 }
 
 export async function getSettings() {
+  await ensureSchema();
   const db = getDb();
   const [row] = await db.select().from(s.userSettings).limit(1);
   if (row) return row;
@@ -65,6 +66,7 @@ export async function getSettings() {
 }
 
 export async function getProfile() {
+  await ensureSchema();
   const db = getDb();
   let [row] = await db.select().from(s.financialProfiles).limit(1);
   if (!row) {

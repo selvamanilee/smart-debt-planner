@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { getDb } from "@/lib/db";
+import { ensureSchema, getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth";
@@ -18,6 +18,7 @@ function safeNext(next: string | undefined) {
 }
 
 export async function hasUser(): Promise<boolean> {
+  await ensureSchema();
   const [row] = await getDb().select({ c: sql<number>`count(*)::int` }).from(users);
   return (row?.c ?? 0) > 0;
 }
@@ -29,6 +30,7 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   if (!username || !password) return fail("Enter your username and password.");
 
   const db = getDb();
+  await ensureSchema();
   const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1);
   if (!user) return fail("Incorrect username or password.");
   if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -64,11 +66,9 @@ export async function setupAction(_prev: ActionState, formData: FormData): Promi
   const parsed = setupSchema.safeParse(formToObject(formData));
   if (!parsed.success) return fail(zodErrors(parsed.error));
 
-  const expected = process.env.SETUP_CODE;
-  if (process.env.NODE_ENV === "production" && !expected) {
-    return fail("SETUP_CODE is not configured on the server. Add it to your environment variables, redeploy, then try again.");
-  }
-  if (expected && parsed.data.setupCode !== expected) return fail({ setupCode: "Setup code is incorrect" });
+  // Optional protection: when SETUP_CODE is configured, the first account requires it.
+  const expected = process.env.SETUP_CODE?.trim();
+  if (expected && parsed.data.setupCode?.trim() !== expected) return fail({ setupCode: "Setup code is incorrect" });
 
   const db = getDb();
   const [user] = await db.insert(users).values({ username: parsed.data.username, passwordHash: await hashPassword(parsed.data.password) }).returning();

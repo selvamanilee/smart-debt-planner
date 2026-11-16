@@ -89,14 +89,24 @@ Open http://localhost:3000 → you are redirected to **/setup** to create your u
 1. Push this repository to GitHub and **Import** it in Vercel (framework: Next.js — no custom settings needed).
 2. Create a Neon database (Vercel Marketplace → Neon, or neon.tech) and copy the pooled connection string.
 3. In Vercel → Project → Settings → Environment Variables add:
-   - `DATABASE_URL` – Neon connection string
-   - `AUTH_SECRET` – long random string
-   - `SETUP_CODE` – one-time code you will type on the setup page (required in production so nobody else can claim your deployment)
+   - `DATABASE_URL` – Neon connection string (**required**; `POSTGRES_URL` from the Neon/Vercel integration is also accepted). Paste the value without quotes.
+   - `AUTH_SECRET` – long random string (recommended; if missing, a key is derived from the database URL)
+   - `SETUP_CODE` – optional one-time code required on the setup page (recommended so nobody else can create the account before you)
    - Optional: `AI_GATEWAY_API_KEY` (not needed if Vercel AI Gateway OIDC is available for the project) and `AI_MODEL` (default `anthropic/claude-sonnet-5.5`)
-4. Deploy. The `vercel-build` script runs `db:migrate` then `next build`.
-5. Open the deployment → `/setup` → create your account with the setup code.
+4. Deploy (after adding or changing variables, **Redeploy** so they take effect). The `vercel-build` script runs `db:migrate` then `next build`; if migrations cannot run at build time, the tables are created automatically on the first request.
+5. Open the deployment → `/setup` → create your account.
 
-Health check: `GET /api/health` (no data, reports DB connectivity).
+### Troubleshooting
+
+Open **`/api/health`** on your deployment. It returns JSON (no financial data) showing whether the database URL is present, the database is reachable, the tables exist and an account has been created, e.g.
+
+```json
+{"ok":true,"database":"connected","schema":"ready","accountCreated":false,"config":{"databaseUrl":"DATABASE_URL", ...}}
+```
+
+- `"databaseUrl":"missing"` → add `DATABASE_URL` and redeploy.
+- `"database":"error"` → the `error` field shows the connection problem (wrong password/host, project suspended, etc.).
+- `"accountCreated":true` but you can't sign in → the account already exists; use the username you chose, or reset via Neon SQL editor: `DELETE FROM users;` then visit `/setup` again.
 
 ## Security
 
