@@ -3,19 +3,11 @@ import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
+import { resolveDatabaseUrl } from "./url";
+
+export { resolveDatabaseUrl, databaseEnvNames } from "./url";
 
 export type Db = ReturnType<typeof drizzlePg<typeof schema>>;
-
-/** Env names set by Neon / Vercel Postgres integrations, in order of preference. */
-const URL_ENV_NAMES = ["DATABASE_URL", "POSTGRES_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_PRISMA_URL", "NEON_DATABASE_URL"] as const;
-
-export function resolveDatabaseUrl(): { url: string | undefined; source: string | null } {
-  for (const name of URL_ENV_NAMES) {
-    const v = process.env[name]?.trim().replace(/^["']|["']$/g, "");
-    if (v) return { url: v, source: name };
-  }
-  return { url: undefined, source: null };
-}
 
 export function isNeonUrl(url: string): boolean {
   return /neon\.tech|neon\.build/i.test(url);

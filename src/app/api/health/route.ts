@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { ensureSchema, getDb } from "@/lib/db";
-import { resolveDatabaseUrl } from "@/lib/db/client";
+import { databaseEnvNames, resolveDatabaseUrl } from "@/lib/db/client";
 import { migrationsFolder } from "@/lib/db/migrate";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +20,11 @@ export async function GET() {
     aiGateway: process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN ? "configured" : "not configured (optional)",
     migrationsBundled: Boolean(migrationsFolder()),
     nodeVersion: process.version,
+    vercelEnv: process.env.VERCEL_ENV ?? null,
+    deployedCommit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+    databaseEnvVarNames: databaseEnvNames(),
   };
-  if (!url) return NextResponse.json({ ok: false, error: "No database URL. Set DATABASE_URL in Vercel → Settings → Environment Variables and redeploy.", config }, { status: 503 });
+  if (!url) return NextResponse.json({ ok: false, error: "No database URL found. Add DATABASE_URL (Neon connection string) in Vercel → Settings → Environment Variables for the Production environment, then Redeploy. databaseEnvVarNames lists the database-related variables this deployment can see.", config }, { status: 503 });
   try {
     await ensureSchema();
     const res = await getDb().execute(sql`select count(*)::int as users from users`);

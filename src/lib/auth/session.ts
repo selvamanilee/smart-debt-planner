@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { resolveDatabaseUrl } from "@/lib/db/url";
 
 export const SESSION_COOKIE = "sdp_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
@@ -15,7 +16,7 @@ async function secretKey(): Promise<Uint8Array> {
   const source =
     explicit && explicit.length >= 16
       ? `auth:${explicit}`
-      : `db:${process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.DATABASE_URL_UNPOOLED ?? "dev-only-insecure-secret"}`;
+      : `db:${resolveDatabaseUrl().url ?? "dev-only-insecure-secret"}`;
   if (cached?.source === source) return cached.key;
   let key: Uint8Array;
   if (source.startsWith("auth:")) {
