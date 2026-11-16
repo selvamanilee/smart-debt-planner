@@ -15,7 +15,7 @@ export async function GET() {
   const config = {
     databaseUrl: source ?? "missing",
     databaseHost: url ? safeHost(url) : null,
-    authSecret: (process.env.AUTH_SECRET?.trim().length ?? 0) >= 16 ? "set" : "missing (derived from database URL)",
+    authSecret: (process.env.AUTH_SECRET?.trim().length ?? 0) >= 16 ? "set" : "ok (auto-derived; set AUTH_SECRET to make it independent of the database password)",
     setupCode: process.env.SETUP_CODE?.trim() ? "set" : "not set (optional)",
     aiGateway: process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN ? "configured" : "not configured (optional)",
     migrationsBundled: Boolean(migrationsFolder()),
@@ -34,7 +34,16 @@ export async function GET() {
     await ensureSchema();
     const res = await getDb().execute(sql`select count(*)::int as users from users`);
     const rows = (Array.isArray(res) ? res : (res as unknown as { rows: { users: number }[] }).rows) as { users: number }[];
-    return NextResponse.json({ ok: true, database: "connected", schema: "ready", accountCreated: (rows[0]?.users ?? 0) > 0, config });
+    const accountCreated = (rows[0]?.users ?? 0) > 0;
+    return NextResponse.json({
+      ok: true,
+      status: accountCreated ? "Ready — sign in at /login" : "Ready — create your account at /setup",
+      nextStep: accountCreated ? "/login" : "/setup",
+      database: "connected",
+      schema: "ready",
+      accountCreated,
+      config,
+    });
   } catch (err) {
     return NextResponse.json({ ok: false, database: "error", error: err instanceof Error ? err.message.slice(0, 300) : "Unknown error", config }, { status: 503 });
   }
