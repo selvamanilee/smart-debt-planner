@@ -12,8 +12,29 @@ import { annualRatePct, hasKnownRate } from "@/lib/finance/debt";
 import { D } from "@/lib/finance/money";
 import type { AssistantContext } from "./local";
 
+/**
+ * How the app can authenticate to Vercel AI Gateway:
+ * - an AI_GATEWAY_API_KEY environment variable, or
+ * - Vercel OIDC, which Vercel provides automatically to functions at request time
+ *   (VERCEL=1 at runtime; VERCEL_OIDC_TOKEN locally after `vercel env pull`).
+ */
+export function aiAuthMethod(): "api_key" | "vercel_oidc" | null {
+  if (process.env.AI_GATEWAY_API_KEY?.trim()) return "api_key";
+  if (process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL === "1") return "vercel_oidc";
+  return null;
+}
+
 export function aiConfigured(): boolean {
-  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN);
+  return aiAuthMethod() !== null;
+}
+
+/** Turn an AI Gateway failure into a short, actionable message (no secrets). */
+export function describeAiError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/credit|billing|payment|insufficient|quota|402/i.test(msg)) return "AI Gateway has no credits on your Vercel team — add credits/billing in Vercel → AI Gateway.";
+  if (/unauthori|forbidden|401|403|oidc|token|api key/i.test(msg)) return "AI Gateway rejected the credentials — enable AI Gateway for this Vercel project or set AI_GATEWAY_API_KEY, then redeploy.";
+  if (/model|not found|404/i.test(msg)) return "The selected AI model is not available on AI Gateway — clear the Model field to use the default.";
+  return `AI Gateway error: ${msg.slice(0, 160)}`;
 }
 
 export async function buildContext(state: FinancialState): Promise<AssistantContext> {

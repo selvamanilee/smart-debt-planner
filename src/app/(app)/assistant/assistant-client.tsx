@@ -31,7 +31,7 @@ const SUGGESTIONS = [
   "Why has my debt-free date changed?",
 ];
 
-export function AssistantClient({ aiEnabled, aiConsent, aiModel, configured, defaultModel, history }: { aiEnabled: boolean; aiConsent: boolean; aiModel: string; configured: boolean; defaultModel: string; history: Msg[] }) {
+export function AssistantClient({ aiEnabled, aiConsent, aiModel, configured, authMethod, defaultModel, history }: { aiEnabled: boolean; aiConsent: boolean; aiModel: string; configured: boolean; authMethod: "api_key" | "vercel_oidc" | null; defaultModel: string; history: Msg[] }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(history);
   const [input, setInput] = useState("");
@@ -166,8 +166,11 @@ export function AssistantClient({ aiEnabled, aiConsent, aiModel, configured, def
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             {!configured ? (
-              <Notice tone="info" title="AI Gateway not configured">Set <code>AI_GATEWAY_API_KEY</code> (or deploy on Vercel with AI Gateway enabled) to use AI. Everything else works without it.</Notice>
+              <Notice tone="info" title="AI Gateway not configured">Set <code>AI_GATEWAY_API_KEY</code> to use AI. Everything else works without it.</Notice>
+            ) : authMethod === "vercel_oidc" ? (
+              <Notice tone="info" title="AI Gateway via Vercel">Uses your Vercel team&apos;s AI Gateway automatically. To turn AI on: switch on “Use AI”, tick the consent box and save. If AI Gateway has no credits, answers fall back to the built-in engine and say why.</Notice>
             ) : null}
+            {configured && !aiEnabled ? <p className="text-xs text-muted-foreground">AI is currently off — answers come from the built-in engine.</p> : null}
             <label className="flex items-center justify-between gap-3">
               <span className="font-medium">Use AI for answers</span>
               <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Use AI for answers" />

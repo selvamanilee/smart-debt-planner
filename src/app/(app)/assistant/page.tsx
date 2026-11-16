@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getDb } from "@/lib/db";
 import { aiRecommendations } from "@/lib/db/schema";
 import { getSettings } from "@/lib/data";
-import { aiConfigured } from "@/lib/assistant/server";
+import { aiAuthMethod, aiConfigured } from "@/lib/assistant/server";
 import { AssistantClient } from "./assistant-client";
 
 export const metadata = { title: "AI Financial Assistant" };
@@ -18,6 +18,7 @@ export default async function AssistantPage() {
         aiConsent={settings.aiConsent}
         aiModel={settings.aiModel ?? ""}
         configured={aiConfigured()}
+        authMethod={aiAuthMethod()}
         defaultModel={process.env.AI_MODEL || "anthropic/claude-sonnet-5.5"}
         history={history.reverse().flatMap((h) => [
           { role: "user" as const, content: h.question },

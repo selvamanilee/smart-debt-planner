@@ -92,7 +92,7 @@ Open http://localhost:3000 → you are redirected to **/setup** to create your u
    - `DATABASE_URL` – Neon connection string (**required**; `POSTGRES_URL` from the Neon/Vercel integration is also accepted). Paste the value without quotes.
    - `AUTH_SECRET` – long random string (recommended; if missing, a key is derived from the database URL)
    - `SETUP_CODE` – optional one-time code required on the setup page (recommended so nobody else can create the account before you)
-   - Optional: `AI_GATEWAY_API_KEY` (not needed if Vercel AI Gateway OIDC is available for the project) and `AI_MODEL` (default `anthropic/claude-sonnet-5.5`)
+   - Optional AI: on Vercel the assistant authenticates to AI Gateway automatically (OIDC) — you only need AI Gateway credits on your Vercel team. Elsewhere set `AI_GATEWAY_API_KEY`. `AI_MODEL` overrides the default model (`anthropic/claude-sonnet-5.5`). Then in the app: AI Financial Assistant → switch on “Use AI”, tick consent, Save.
 4. Deploy (after adding or changing variables, **Redeploy** so they take effect). The `vercel-build` script runs `db:migrate` then `next build`; if migrations cannot run at build time, the tables are created automatically on the first request.
 5. Open the deployment → `/setup` → create your account.
 

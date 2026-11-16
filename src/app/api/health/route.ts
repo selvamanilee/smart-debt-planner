@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { ensureSchema, getDb } from "@/lib/db";
 import { databaseEnvNames, resolveDatabaseUrl } from "@/lib/db/client";
 import { migrationsFolder } from "@/lib/db/migrate";
+import { aiAuthMethod } from "@/lib/assistant/server";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function GET() {
     databaseHost: url ? safeHost(url) : null,
     authSecret: (process.env.AUTH_SECRET?.trim().length ?? 0) >= 16 ? "set" : "ok (auto-derived; set AUTH_SECRET to make it independent of the database password)",
     setupCode: process.env.SETUP_CODE?.trim() ? "set" : "not set (optional)",
-    aiGateway: process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN ? "configured" : "not configured (optional)",
+    aiGateway: aiAuthMethod() === "api_key" ? "AI_GATEWAY_API_KEY set" : aiAuthMethod() === "vercel_oidc" ? "Vercel OIDC (automatic)" : "not configured (optional)",
     migrationsBundled: Boolean(migrationsFolder()),
     nodeVersion: process.version,
     vercelEnv: process.env.VERCEL_ENV ?? null,

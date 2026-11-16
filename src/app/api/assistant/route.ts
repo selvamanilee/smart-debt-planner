@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { aiRecommendations } from "@/lib/db/schema";
 import { getFinancialState } from "@/lib/data";
 import { answerLocally, sectionsToMarkdown } from "@/lib/assistant/local";
-import { aiConfigured, answerWithAI, buildContext } from "@/lib/assistant/server";
+import { aiConfigured, answerWithAI, buildContext, describeAiError } from "@/lib/assistant/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       source = "ai";
     } catch (err) {
       console.error("[assistant] AI call failed, falling back to local engine", err);
-      note = "The AI service was unavailable, so this answer comes from the built-in calculation engine.";
+      note = `${describeAiError(err)} This answer comes from the built-in calculation engine.`;
       answer = sectionsToMarkdown(answerLocally(question, await buildContext(state)));
     }
   } else {
