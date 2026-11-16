@@ -22,6 +22,11 @@ export async function GET() {
     nodeVersion: process.version,
     vercelEnv: process.env.VERCEL_ENV ?? null,
     deployedCommit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+    deploymentId: process.env.VERCEL_DEPLOYMENT_ID ?? null,
+    deploymentUrl: process.env.VERCEL_URL ?? null,
+    projectProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL ?? null,
+    /** Count of non-system environment variables the deployment received (names/values not shown). */
+    customEnvVarCount: Object.keys(process.env).filter((k) => !/^(VERCEL|NEXT_|NODE_|AWS_|LAMBDA_|_|PATH|PWD|HOME|LANG|TZ|SHLVL|HOSTNAME|LD_|NX_|TURBO|CI$|NOW_)/.test(k)).length,
     databaseEnvVarNames: databaseEnvNames(),
   };
   if (!url) return NextResponse.json({ ok: false, error: "No database URL found. Add DATABASE_URL (Neon connection string) in Vercel → Settings → Environment Variables for the Production environment, then Redeploy. databaseEnvVarNames lists the database-related variables this deployment can see.", config }, { status: 503 });
